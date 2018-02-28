@@ -11,7 +11,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 /**
  *
@@ -28,22 +30,28 @@ public class Agenda {
         return conn;
     }
 
-    public void listar() throws ClassNotFoundException, SQLException {
+    public List<Pessoa> listar() throws ClassNotFoundException, SQLException {
 
+        List<Pessoa> lista = new ArrayList<Pessoa>();   
+         
         try (Connection conn = obterConexão();
                 PreparedStatement stmt = conn.prepareStatement("SELECT id, nome, dtnascimento FROM PESSOA");
                 ResultSet resultados = stmt.executeQuery();) {
-
+            
             while (resultados.next()) {
                 long id = resultados.getLong("id");
                 String nome = resultados.getString("nome");
                 Date dtnascimento = resultados.getDate("dtnascimento");
-
-                System.out.println(id + ", " + nome + ", " + dtnascimento);
+                Pessoa p = new Pessoa();
+                p.setId(id);
+                p.setNome(nome);
+                p.setDtNascimento(dtnascimento);
+                lista.add(p);
+               // System.out.println(id + ", " + nome + ", " + dtnascimento);
             }
 
         }
-
+        return lista;
     }
 
     public void incluir() throws ClassNotFoundException, SQLException {
@@ -63,7 +71,10 @@ public class Agenda {
         Agenda agenda = new Agenda();
         try {
             agenda.incluir();
-            agenda.listar();
+            List<Pessoa> lista = agenda.listar();
+            for (Pessoa p : lista) {
+                System.out.println(p.getId() + ", " + p.getNome() + "," + p.getDtNascimento());
+            }
         } catch (ClassNotFoundException ex) {
             System.err.print(ex.getMessage());
         } catch (SQLException ex) {
