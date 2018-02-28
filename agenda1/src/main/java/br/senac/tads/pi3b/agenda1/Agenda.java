@@ -5,6 +5,7 @@
  */
 package br.senac.tads.pi3b.agenda1;
 
+import com.mysql.jdbc.Statement;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
@@ -56,15 +57,48 @@ public class Agenda {
 
     public void incluir() throws ClassNotFoundException, SQLException {
 
-        try (Connection conn = obterConexão();
-            PreparedStatement stmt = conn.prepareStatement("INSERT INTO PESSOA (nome, dtnascimento) VALUES (?,?)")) {
+        try (Connection conn = obterConexão();){
+                conn.setAutoCommit(false);
+                         
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO PESSOA (nome, dtnascimento) VALUES (?,?)"
+                    ,Statement.RETURN_GENERATED_KEYS)){
             stmt.setString(1, "MARIA DE SOUZA");
             GregorianCalendar cal = new GregorianCalendar(1992, 10, 5); //5 de novembro de 1992
             stmt.setDate(2, new java.sql.Date(cal.getTimeInMillis()));
 
             int status = stmt.executeUpdate();
-            System.out.println("Status: " + status);
+            
+            ResultSet generateKeys = stmt.getGeneratedKeys();
+            if(generateKeys.next()){
+                long idPessoa = generateKeys.getLong(1);
+                
+                try(PreparedStatement stmt2 = conn.prepareStatement("INSERT INTO CONTATO (tipo, valor, idpessoa) values (?,?,?) ")){
+                    //E-mail
+                    stmt2.setInt(1, 1);
+                    stmt2.setString(2, "marilia@zmail.com");
+                    stmt2.setLong(3, idPessoa);
+                    
+                    stmt2.executeUpdate();                 
+                }
+                try (PreparedStatement stmt3 = conn.prepareStatement("INSERT INTO CONTATO (tipo, valor, idpessoa) values (?,?,?) ")){
+                    stmt3.setInt(1, 2);
+                    stmt3.setString(2, "(11) 98765-4321");
+                    stmt3.setLong(3, idPessoa);
+                    
+                    stmt3.executeUpdate();
+                }
+                
+                //Efitivar todas as operações no BD                
+                conn.commit();
+            }
+           
+        }catch(SQLException e){
+            //Em caso de erro volta para situação inicial
+            conn.rollback();
+            throw e;
         }
+    }
     }
 
     public static void main(String[] args) {
